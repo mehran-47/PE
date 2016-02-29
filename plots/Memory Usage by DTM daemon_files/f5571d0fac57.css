@@ -1,0 +1,1 @@
+@page{size:landscape}body *{visibility:hidden}div.svg-container,div.svg-container *{width:800px;max-width:800px;visibility:visible;border:none}div.svg-container{position:absolute;top:0;left:0}div.modebar{display:none;visibility:hidden}
