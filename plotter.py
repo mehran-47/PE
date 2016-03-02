@@ -5,38 +5,41 @@ import json, sys, logging, time, plotly, plotly.graph_objs as go
 
 class plotter():
 	def __init__(self, dumpToLoad):
-		with open(dumpToLoad, 'r') as df: self.dump = json.loads(df.read())
-		self.fig = None
+		#with open(dumpToLoad, 'r') as df: self.dump = json.loads(df.read())
+		self.dump = dumpToLoad
+		self.layout = go.Layout(autosize=False, width=800, height=500)
+		self.fig = plotly.tools.make_subplots(rows=2, cols=1, vertical_spacing=0.1, subplot_titles=('Memory Usage', 'Network Usage',))
 
-	def plot(self, tupleList):
-		#plt.plot([self.dump[procName][attrName][0] for i in self.dump[procName][attrName]],  [self.dump[procName][attrName][1] for i in self.dump[procName][attrName]])
-		#plt.show()
+	def plot(self, tupleList, traceName):
 		ld("%r" %([tupleList[i][0] for i in range(len(tupleList))]))
-		plotly.offline.plot({\
-			"data": [go.Scatter(x=[tupleList[i][0] for i in range(len(tupleList))],\
-							y=[tupleList[i][1] for i in range(len(tupleList))]),\
-					]
-			})
+		memTrace = go.Scatter( x=[tupleList[i][0] for i in range(len(tupleList))],\
+							 y=[tupleList[i][1] for i in range(len(tupleList))],\
+							 name='memory usage of '+traceName)
+		self.fig.append_trace(memTrace, 1, 1)
 
-	def plot_net(self, tupleList, fileName):
+	def plot_net(self, tupleList, traceName):
 		upTrace = go.Scatter( x=[tupleList['up'][i][0] for i in range(len(tupleList['up']))], \
 							y=[tupleList['up'][i][1] for i in range(len(tupleList['up']))],\
-							name='up-stream' )
+							name='upload rate of '+traceName )
 		downTrace = go.Scatter( x=[tupleList['down'][i][0] for i in range(len(tupleList['down']))], \
 							y=[tupleList['down'][i][1] for i in range(len(tupleList['down']))],\
-							name='down-stream' )
-		self.fig = plotly.tools.make_subplots(rows=1, cols=1, specs=[[{}]], shared_xaxes=True, shared_yaxes=True, vertical_spacing=0.001)
-		self.fig.append_trace(upTrace,1,1)
-		self.fig.append_trace(downTrace,1,1)
-		plotly.offline.plot(self.fig, filename=fileName)
+							name='download rate of '+traceName )
+		self.fig.append_trace(upTrace,2,1)
+		self.fig.append_trace(downTrace,2,1)
+		
 
 
 if __name__ == '__main__':
-	logging.basicConfig(format= '%(asctime)s %(levelname)s - %(name)s:\t%(message)s', level=logging.DEBUG)
+	logging.basicConfig(format= '%(asctime)s %(levelname)s - %(name)s:\t%(message)s', level=logging.INFO)
 	ld, li = logging.debug, logging.info
+	#totalMem, totalNet = dict(), {'up':dict(), 'down':dict()}
+	#memAggArr = [dump[key]['memory_info'][i][1] for i in dump[kefor key in dump]
 	if sys.argv[1:]:
-		pl = plotter(sys.argv[1])
-		pl.plot(pl.dump['osafdtmd']['memory_info'])
-		pl.plot_net(pl.dump['osafdtmd']['net_load'], 'dtmd_net.html')		
-		#time.sleep(5)
-		
+		with open(sys.argv[1], 'r') as df: dump = json.loads(df.read())
+		memAggArr = []
+		pl = plotter(dump)
+		for aProc in dump:
+			pl.plot(dump[aProc]['memory_info'], aProc)
+			if len(dump[aProc]['net_load']['up']) + len(dump[aProc]['net_load']['down'])>0:
+				pl.plot_net(dump[aProc]['net_load'], aProc)
+		plotly.offline.plot(pl.fig, filename=sys.argv[1]+'_plots.html')
