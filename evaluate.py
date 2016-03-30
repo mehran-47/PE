@@ -69,13 +69,12 @@ class evaluate():
 	
 	def updateWithNetworkUsage(self, devName, procName):
 		child = spawn('bash', timeout=None)
-		child.sendline('nethogs -t '+devName+' | grep '+ procName+' --colour=never')
-		global threadsRunning
+		child.sendline('nethogs -t '+devName+' | grep '+ procName+' --colour=never')	
 		for line in child:
 			if not threadsRunning.is_set():
 				break
 			try:
-				logging.debug('from nethogs -- '+line.decode('utf-8'))
+				logging.debug(line.decode('utf-8'))
 				lineSplit = line.decode('utf-8').split('\t')
 				pid = lineSplit[0].split('/')[-2]
 				up = float(lineSplit[1])
@@ -96,26 +95,30 @@ class evaluate():
 		child.terminate()
 
 	def mergeAndDisplayFinalDict(self):
-		global threadsRunning
 		while threadsRunning.is_set():
 			self.centralClock += 1
 			procsDictByName = self.dictByNames()
 			memoryInfoByName = dict( (k, sum([p.memory_info().rss/10**6 for p in l]) ) for k,l in procsDictByName.items())
-			logging.debug("memoryInfoByName %r" %(memoryInfoByName))
+			cpuInfoByName = dict( (k, sum([p.cpu_percent(interval=None) for p in l]) ) for k,l in procsDictByName.items())
+			#logging.debug("memoryInfoByName %r" %(memoryInfoByName))
 			for k in memoryInfoByName:
 				if k not in self.finalDict:			
 					self.finalDict[k] = {}
 				self.finalDict[k]['memory_info'] = memoryInfoByName[k]
+				self.finalDict[k]['cpu_info'] = cpuInfoByName[k]
 			logging.debug("from mergeAndDisplayFinalDict:  %r", self.finalDict)
 			for k in self.finalDict:
 				if k not in self.inventory:
 					self.inventory[k] = {}
 					self.inventory[k]['memory_info'] = []
+					self.inventory[k]['cpu_info'] = []
 					self.inventory[k]['net_load'] = {}
 					self.inventory[k]['net_load']['up'] = []
 					self.inventory[k]['net_load']['down'] = []
 				if self.finalDict[k].get('memory_info')!=None:
 					self.inventory[k]['memory_info'] += [[self.centralClock, self.finalDict[k].get('memory_info')]]
+				if self.finalDict[k].get('cpu_info')!=None:
+					self.inventory[k]['cpu_info'] += [[self.centralClock, self.finalDict[k].get('cpu_info')]]
 				if self.finalDict[k].get('net_load')!=None:
 					logging.debug("%r" %(self.finalDict[k].get('net_load')))
 					if 'up' in self.finalDict[k].get('net_load'):
@@ -129,7 +132,6 @@ class evaluate():
 class ThreadInterruptable(Thread):
 	'''Extended python thread to be able to terminate them in batch using one 'SIGTERM' '''
 	def join(self, timeout=0.1):
-		global threadsRunning
 		try:
 			super(ThreadInterruptable, self).join(timeout)
 		except KeyboardInterrupt:
