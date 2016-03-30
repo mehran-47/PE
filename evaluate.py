@@ -152,7 +152,7 @@ class ThreadInterruptable(Thread):
 			aThread._stop()
 
 if __name__ == '__main__':
-	logging.basicConfig(format= '%(asctime)s %(levelname)s - %(name)s:\t%(message)s', level=logging.INFO)
+	logging.basicConfig(format= '%(asctime)s %(levelname)s - %(name)s:\t%(message)s', level=logging.WARNING)
 	if sys.argv[1:]:
 		threadsRunning = Event()
 		threadsRunning.set()
