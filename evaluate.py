@@ -99,7 +99,7 @@ class evaluate():
 			self.centralClock += 1
 			procsDictByName = self.dictByNames()
 			memoryInfoByName = dict( (k, sum([p.memory_info().rss/10**6 for p in l]) ) for k,l in procsDictByName.items())
-			cpuInfoByName = dict( (k, sum([p.cpu_percent(interval=None) for p in l]) ) for k,l in procsDictByName.items())
+			cpuInfoByName = dict( (k, sum([p.cpu_percent(interval=self.interval/2) for p in l]) ) for k,l in procsDictByName.items())
 			#logging.debug("memoryInfoByName %r" %(memoryInfoByName))
 			for k in memoryInfoByName:
 				if k not in self.finalDict:			
@@ -125,7 +125,7 @@ class evaluate():
 						self.inventory[k]['net_load']['up'] += [[self.centralClock ,self.finalDict[k]['net_load']['up']]]
 						self.inventory[k]['net_load']['down'] += [[self.centralClock, self.finalDict[k]['net_load']['down']]]
 			logging.info("inventory : %r" %(self.inventory))
-			time.sleep(self.interval)			
+			time.sleep(self.interval/2)			
 
 
 
